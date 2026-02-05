@@ -874,6 +874,148 @@
             opacity: 1;
         }
 
+        /* Rainbow Sparkle Animation */
+        .sparkle-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #ff0080, #ff8c00, #40e0d0, #ff0080);
+            background-size: 300% 300%;
+            border-radius: 50%;
+            animation: sparkleFloat 1.5s ease-out forwards, sparkleColor 0.5s linear infinite;
+        }
+
+        @keyframes sparkleFloat {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+
+        @keyframes sparkleColor {
+            0% {
+                background-position: 0% 50%;
+                filter: hue-rotate(0deg);
+            }
+            100% {
+                background-position: 100% 50%;
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        /* Big Red Stop Sign Animation */
+        .stop-sign-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .stop-sign-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .stop-sign {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: stopSignPulse 0.5s ease-out, stopSignShake 0.5s ease-out 0.2s;
+            box-shadow: 0 20px 60px rgba(239, 68, 68, 0.6);
+            position: relative;
+        }
+
+        .stop-sign::before {
+            content: '';
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            background: #dc2626;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            border: 8px solid white;
+        }
+
+        .stop-sign-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: white;
+        }
+
+        .stop-sign-content .stop-text {
+            font-size: 3rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .stop-sign-content .overdue-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes stopSignPulse {
+            0% {
+                transform: scale(0) rotate(0deg);
+            }
+            50% {
+                transform: scale(1.2) rotate(180deg);
+            }
+            100% {
+                transform: scale(1) rotate(360deg);
+            }
+        }
+
+        @keyframes stopSignShake {
+            0%, 100% {
+                transform: rotate(0deg) scale(1);
+            }
+            25% {
+                transform: rotate(-5deg) scale(1.05);
+            }
+            75% {
+                transform: rotate(5deg) scale(1.05);
+            }
+        }
+
         @media (max-width: 640px) {
             header h1 {
                 font-size: 1.5rem;
@@ -956,6 +1098,24 @@
                 right: 10px;
                 left: 10px;
                 max-width: none;
+            }
+
+            .stop-sign {
+                width: 150px;
+                height: 150px;
+            }
+
+            .stop-sign::before {
+                width: 135px;
+                height: 135px;
+            }
+
+            .stop-sign-content .stop-text {
+                font-size: 2rem;
+            }
+
+            .stop-sign-content .overdue-text {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -1094,6 +1254,19 @@
         <p id="notificationText"></p>
     </div>
 
+    <!-- Rainbow Sparkle Container -->
+    <div class="sparkle-container" id="sparkleContainer"></div>
+
+    <!-- Stop Sign Overlay -->
+    <div class="stop-sign-overlay" id="stopSignOverlay">
+        <div class="stop-sign">
+            <div class="stop-sign-content">
+                <div class="stop-text">STOP</div>
+                <div class="overdue-text" id="stopSignMessage">Task Overdue!</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // State management
         let tasks = [];
@@ -1127,6 +1300,9 @@
         const newTaskDeadlineDate = document.getElementById('newTaskDeadlineDate');
         const newTaskDeadlineTime = document.getElementById('newTaskDeadlineTime');
         const clearNewDeadline = document.getElementById('clearNewDeadline');
+        const sparkleContainer = document.getElementById('sparkleContainer');
+        const stopSignOverlay = document.getElementById('stopSignOverlay');
+        const stopSignMessage = document.getElementById('stopSignMessage');
 
         // Notification sound using Web Audio API
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1161,6 +1337,53 @@
                 osc2.stop(audioContext.currentTime + 0.5);
             }, 200);
         }
+
+        // Rainbow Sparkle Effect
+        function createRainbowSparkle() {
+            const sparkleCount = 30;
+            
+            for (let i = 0; i < sparkleCount; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    
+                    // Random direction
+                    const angle = (Math.PI * 2 * i) / sparkleCount;
+                    const distance = 100 + Math.random() * 200;
+                    const tx = Math.cos(angle) * distance;
+                    const ty = Math.sin(angle) * distance;
+                    
+                    sparkle.style.setProperty('--tx', `${tx}px`);
+                    sparkle.style.setProperty('--ty', `${ty}px`);
+                    
+                    sparkleContainer.appendChild(sparkle);
+                    
+                    // Remove sparkle after animation
+                    setTimeout(() => {
+                        sparkle.remove();
+                    }, 1500);
+                }, i * 20);
+            }
+        }
+
+        // Show Stop Sign for Overdue Task
+        function showStopSign(taskText) {
+            stopSignMessage.textContent = `"${taskText}" is OVERDUE!`;
+            stopSignOverlay.classList.add('show');
+            
+            // Play alert sound
+            playNotificationSound();
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                stopSignOverlay.classList.remove('show');
+            }, 3000);
+        }
+
+        // Close stop sign when clicked
+        stopSignOverlay.addEventListener('click', () => {
+            stopSignOverlay.classList.remove('show');
+        });
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', () => {
@@ -1270,7 +1493,8 @@
                 priority: currentPriority,
                 createdAt: new Date().toISOString(),
                 reminder: null,
-                deadline: deadlineValue
+                deadline: deadlineValue,
+                overdueAlertShown: false
             };
             
             tasks.unshift(task);
@@ -1278,6 +1502,17 @@
             newTaskDeadlineDate.value = '';
             newTaskDeadlineTime.value = '';
             taskInput.focus();
+            
+            // Trigger rainbow sparkle animation
+            createRainbowSparkle();
+            
+            // Check if the task is already overdue
+            if (deadlineValue && new Date() > new Date(deadlineValue)) {
+                setTimeout(() => {
+                    showStopSign(taskText);
+                    task.overdueAlertShown = true;
+                }, 1500); // Show after sparkle animation
+            }
             
             saveTasks();
             renderTasks();
@@ -1348,6 +1583,16 @@
                         showNotification('Task Reminder!', task.text);
                         playNotificationSound();
                         task.reminderShown = true;
+                        needsUpdate = true;
+                    }
+                }
+                
+                // Check for newly overdue tasks
+                if (task.deadline && !task.overdueAlertShown && !task.completed) {
+                    const deadline = new Date(task.deadline);
+                    if (now > deadline) {
+                        showStopSign(task.text);
+                        task.overdueAlertShown = true;
                         needsUpdate = true;
                     }
                 }
@@ -1648,7 +1893,8 @@
                         priority: task.priority || 'medium',
                         reminder: task.reminder || null,
                         reminderShown: task.reminderShown || false,
-                        deadline: task.deadline || null
+                        deadline: task.deadline || null,
+                        overdueAlertShown: task.overdueAlertShown || false
                     }));
                 } catch (e) {
                     console.error('Error loading tasks:', e);
