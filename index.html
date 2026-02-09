@@ -1304,138 +1304,6 @@
         const stopSignOverlay = document.getElementById('stopSignOverlay');
         const stopSignMessage = document.getElementById('stopSignMessage');
 
-        // Notification sound using Web Audio API
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playNotificationSound() {
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.5);
-            
-            // Second tone
-            setTimeout(() => {
-                const osc2 = audioContext.createOscillator();
-                const gain2 = audioContext.createGain();
-                osc2.connect(gain2);
-                gain2.connect(audioContext.destination);
-                osc2.frequency.value = 1000;
-                osc2.type = 'sine';
-                gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                osc2.start(audioContext.currentTime);
-                osc2.stop(audioContext.currentTime + 0.5);
-            }, 200);
-        }
-
-        // Well Done Sound - Success melody (plays only twice)
-        function playWellDoneSound() {
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C (C major chord)
-            const duration = 0.2;
-            const playCount = 2; // Play only two times
-            let baseTime = audioContext.currentTime;
-            
-            // Play the melody twice
-            for (let repeat = 0; repeat < playCount; repeat++) {
-                let currentTime = baseTime + (repeat * (notes.length * duration + 0.2));
-                
-                notes.forEach((freq, index) => {
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    oscillator.frequency.value = freq;
-                    oscillator.type = 'sine';
-                    
-                    gainNode.gain.setValueAtTime(0, currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.3, currentTime + 0.05);
-                    gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
-                    
-                    oscillator.start(currentTime);
-                    oscillator.stop(currentTime + duration);
-                    
-                    currentTime += duration;
-                });
-                
-                // Add a final celebratory note only after the second play
-                if (repeat === playCount - 1) {
-                    setTimeout(() => {
-                        const osc = audioContext.createOscillator();
-                        const gain = audioContext.createGain();
-                        osc.connect(gain);
-                        gain.connect(audioContext.destination);
-                        osc.frequency.value = 1318.51; // E6
-                        osc.type = 'sine';
-                        gain.gain.setValueAtTime(0, audioContext.currentTime);
-                        gain.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.1);
-                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
-                        osc.start(audioContext.currentTime);
-                        osc.stop(audioContext.currentTime + 0.6);
-                    }, (playCount * notes.length * duration + 0.2) * 1000);
-                }
-            }
-        }
-
-        // Fire Engine Sound - Alert siren
-        function playFireEngineSound() {
-            const sirenDuration = 1.5;
-            const cycles = 3;
-            
-            for (let i = 0; i < cycles; i++) {
-                const startTime = audioContext.currentTime + (i * sirenDuration);
-                
-                // Low tone
-                const oscLow = audioContext.createOscillator();
-                const gainLow = audioContext.createGain();
-                oscLow.connect(gainLow);
-                gainLow.connect(audioContext.destination);
-                
-                oscLow.frequency.setValueAtTime(400, startTime);
-                oscLow.frequency.exponentialRampToValueAtTime(800, startTime + sirenDuration / 2);
-                oscLow.frequency.exponentialRampToValueAtTime(400, startTime + sirenDuration);
-                oscLow.type = 'sawtooth';
-                
-                gainLow.gain.setValueAtTime(0, startTime);
-                gainLow.gain.linearRampToValueAtTime(0.4, startTime + 0.1);
-                gainLow.gain.setValueAtTime(0.4, startTime + sirenDuration - 0.1);
-                gainLow.gain.linearRampToValueAtTime(0, startTime + sirenDuration);
-                
-                oscLow.start(startTime);
-                oscLow.stop(startTime + sirenDuration);
-                
-                // High tone (overlapping)
-                const oscHigh = audioContext.createOscillator();
-                const gainHigh = audioContext.createGain();
-                oscHigh.connect(gainHigh);
-                gainHigh.connect(audioContext.destination);
-                
-                oscHigh.frequency.setValueAtTime(800, startTime);
-                oscHigh.frequency.exponentialRampToValueAtTime(1600, startTime + sirenDuration / 2);
-                oscHigh.frequency.exponentialRampToValueAtTime(800, startTime + sirenDuration);
-                oscHigh.type = 'sawtooth';
-                
-                gainHigh.gain.setValueAtTime(0, startTime);
-                gainHigh.gain.linearRampToValueAtTime(0.3, startTime + 0.1);
-                gainHigh.gain.setValueAtTime(0.3, startTime + sirenDuration - 0.1);
-                gainHigh.gain.linearRampToValueAtTime(0, startTime + sirenDuration);
-                
-                oscHigh.start(startTime);
-                oscHigh.stop(startTime + sirenDuration);
-            }
-        }
-
         // Rainbow Sparkle Effect
         function createRainbowSparkle() {
             const sparkleCount = 30;
@@ -1468,9 +1336,6 @@
         function showStopSign(taskText) {
             stopSignMessage.textContent = `"${taskText}" is OVERDUE!`;
             stopSignOverlay.classList.add('show');
-            
-            // Play alert sound
-            playNotificationSound();
             
             // Hide after 3 seconds
             setTimeout(() => {
@@ -1679,7 +1544,6 @@
                     const reminderTime = new Date(task.reminder);
                     if (now >= reminderTime) {
                         showNotification('Task Reminder!', task.text);
-                        playNotificationSound();
                         task.reminderShown = true;
                         needsUpdate = true;
                     }
@@ -1798,15 +1662,13 @@
                         if (now < deadline) {
                             // Well done! Completed before due date
                             createRainbowSparkle();
-                            playWellDoneSound();
                         } else {
                             // Task was overdue when completed
-                            playFireEngineSound();
+                            // No sound
                         }
                     } else {
                         // No deadline, just celebrate completion
                         createRainbowSparkle();
-                        playWellDoneSound();
                     }
                 }
                 
