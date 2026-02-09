@@ -1338,6 +1338,96 @@
             }, 200);
         }
 
+        // Well Done Sound - Success melody
+        function playWellDoneSound() {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C (C major chord)
+            const duration = 0.2;
+            let currentTime = audioContext.currentTime;
+            
+            notes.forEach((freq, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = freq;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, currentTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
+                
+                oscillator.start(currentTime);
+                oscillator.stop(currentTime + duration);
+                
+                currentTime += duration;
+            });
+            
+            // Add a final celebratory note
+            setTimeout(() => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.frequency.value = 1318.51; // E6
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0, audioContext.currentTime);
+                gain.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.6);
+            }, notes.length * duration * 1000);
+        }
+
+        // Fire Engine Sound - Alert siren
+        function playFireEngineSound() {
+            const sirenDuration = 1.5;
+            const cycles = 3;
+            
+            for (let i = 0; i < cycles; i++) {
+                const startTime = audioContext.currentTime + (i * sirenDuration);
+                
+                // Low tone
+                const oscLow = audioContext.createOscillator();
+                const gainLow = audioContext.createGain();
+                oscLow.connect(gainLow);
+                gainLow.connect(audioContext.destination);
+                
+                oscLow.frequency.setValueAtTime(400, startTime);
+                oscLow.frequency.exponentialRampToValueAtTime(800, startTime + sirenDuration / 2);
+                oscLow.frequency.exponentialRampToValueAtTime(400, startTime + sirenDuration);
+                oscLow.type = 'sawtooth';
+                
+                gainLow.gain.setValueAtTime(0, startTime);
+                gainLow.gain.linearRampToValueAtTime(0.4, startTime + 0.1);
+                gainLow.gain.setValueAtTime(0.4, startTime + sirenDuration - 0.1);
+                gainLow.gain.linearRampToValueAtTime(0, startTime + sirenDuration);
+                
+                oscLow.start(startTime);
+                oscLow.stop(startTime + sirenDuration);
+                
+                // High tone (overlapping)
+                const oscHigh = audioContext.createOscillator();
+                const gainHigh = audioContext.createGain();
+                oscHigh.connect(gainHigh);
+                gainHigh.connect(audioContext.destination);
+                
+                oscHigh.frequency.setValueAtTime(800, startTime);
+                oscHigh.frequency.exponentialRampToValueAtTime(1600, startTime + sirenDuration / 2);
+                oscHigh.frequency.exponentialRampToValueAtTime(800, startTime + sirenDuration);
+                oscHigh.type = 'sawtooth';
+                
+                gainHigh.gain.setValueAtTime(0, startTime);
+                gainHigh.gain.linearRampToValueAtTime(0.3, startTime + 0.1);
+                gainHigh.gain.setValueAtTime(0.3, startTime + sirenDuration - 0.1);
+                gainHigh.gain.linearRampToValueAtTime(0, startTime + sirenDuration);
+                
+                oscHigh.start(startTime);
+                oscHigh.stop(startTime + sirenDuration);
+            }
+        }
+
         // Rainbow Sparkle Effect
         function createRainbowSparkle() {
             const sparkleCount = 30;
@@ -1685,7 +1775,33 @@
         function toggleTask(id) {
             const task = tasks.find(t => t.id === id);
             if (task) {
+                const wasCompleted = task.completed;
                 task.completed = !task.completed;
+                
+                // If task is being marked as complete (not uncomplete)
+                if (task.completed && !wasCompleted) {
+                    const now = new Date();
+                    const hasDeadline = task.deadline !== null;
+                    
+                    if (hasDeadline) {
+                        const deadline = new Date(task.deadline);
+                        
+                        // Check if completed before deadline
+                        if (now < deadline) {
+                            // Well done! Completed before due date
+                            createRainbowSparkle();
+                            playWellDoneSound();
+                        } else {
+                            // Task was overdue when completed
+                            playFireEngineSound();
+                        }
+                    } else {
+                        // No deadline, just celebrate completion
+                        createRainbowSparkle();
+                        playWellDoneSound();
+                    }
+                }
+                
                 saveTasks();
                 renderTasks();
                 updateStats();
